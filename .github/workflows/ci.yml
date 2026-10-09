@@ -66,7 +66,7 @@ jobs:
             --document-name "AWS-RunShellScript" \
             --parameters 'commands=[
               "set -eu",
-              "git -C /opt/python-cicd-ec2 pull --ff-only origin main",
+              "git config --global --add safe.directory /opt/python-cicd-ec2 && git -C /opt/python-cicd-ec2 pull --ff-only origin main",
               "sudo systemctl restart python-cicd",
               "curl --fail --silent --show-error http://127.0.0.1:8000/health"
             ]' \

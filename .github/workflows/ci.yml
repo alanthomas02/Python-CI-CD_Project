@@ -1,3 +1,4 @@
+
 name: Python CI/CD
 
 on:
@@ -13,6 +14,7 @@ jobs:
   test:
     name: Test Python application
     runs-on: ubuntu-latest
+
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -33,9 +35,11 @@ jobs:
     needs: test
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+
     permissions:
       contents: read
       id-token: write
+
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -48,9 +52,15 @@ jobs:
 
       - name: Deploy application through SSM
         env:
-          EC2_INSTANCE_ID: i-06df64715ddef9527
+          EC2_INSTANCE_ID: ${{ vars.EC2_INSTANCE_ID }}
         run: |
           set -euo pipefail
+
+          if [ -z "$EC2_INSTANCE_ID" ]; then
+            echo "ERROR: EC2_INSTANCE_ID repository variable is missing."
+            exit 1
+          fi
+
           COMMAND_ID=$(aws ssm send-command \
             --instance-ids "$EC2_INSTANCE_ID" \
             --document-name "AWS-RunShellScript" \
@@ -62,10 +72,26 @@ jobs:
             ]' \
             --query 'Command.CommandId' \
             --output text)
+
           echo "SSM command ID: $COMMAND_ID"
-          aws ssm wait command-executed \
+
+          if ! aws ssm wait command-executed \
             --command-id "$COMMAND_ID" \
-            --instance-id "$EC2_INSTANCE_ID"
+            --instance-id "$EC2_INSTANCE_ID"; then
+
+            echo "Deployment command failed. Retrieving details..."
+
+            aws ssm get-command-invocation \
+              --command-id "$COMMAND_ID" \
+              --instance-id "$EC2_INSTANCE_ID" \
+              --query '{Status:Status,Output:StandardOutputContent,Errors:StandardErrorContent}' \
+              --output json || true
+
+            exit 1
+          fi
+
+          echo "Deployment command completed."
+
           aws ssm get-command-invocation \
             --command-id "$COMMAND_ID" \
             --instance-id "$EC2_INSTANCE_ID" \

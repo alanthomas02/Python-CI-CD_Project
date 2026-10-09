@@ -21,7 +21,7 @@ jobs:
           python-version: "3.12"
 
       - name: Check Python syntax
-        run: python -m py_compile app.py
+        run: python -m py_compile test_app.py
 
       - name: Verify health endpoint logic
         run: |

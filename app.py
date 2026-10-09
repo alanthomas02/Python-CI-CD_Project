@@ -17,7 +17,7 @@ class AppHandler(BaseHTTPRequestHandler):
             self.send_response(200)
             self.send_header("Content-Type", "text/plain")
             self.end_headers()
-            self.wfile.write(b"Hello from our CI/CD project!")
+            self.wfile.write(b"Hello from my automated CI/CD project!")
 
 
 if __name__ == "__main__":
